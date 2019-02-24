@@ -1,0 +1,482 @@
+---
+title: "Rapport Final Tunisair"
+output: html_document
+---
+
+##Methodologie de travail CRISP-DM:
+La méthode CRISP se décompose en 6 étapes allant de la compréhension du probleme metier au deploiement et la mise en production.
+Elle reste aujourd'hui la seule méthode utilisable efficacement pour tous les projets Data Science.
+
+##Comprehension du Metier:
+
+Malgré son expérience dans le domaine aérien ,puisqu'elle été fondé en 1948, Tunisair n'arriva pas d'être parmi les compagnies les plus populaires dans le monde.
+Tunisair opère sur 4 continent du globe mais avec un intervalle limité. 
+
+Les limitations de son budget est un point cruciale constaté d'aprés
+L'évolution lente de la compagnie. 
+Elle admet une flotte de 28 avions avec une moyenne d'âge plus que 16 ans .
+C'est pour cela la compagnie vise à moderniser la flotte pour qu'elle puisse répondre mieux  au exigences internationales.
+
+Pour exécuter notre étude nous devons répondre aux questionx suivantes :
+
+- Est-ce que la flotte actuelle de Tunisair répond aux exigences internationales ?  
+- Peut-on affirmer que les modèles disponibles dans la compagnie tunisienne joignent les normes standards favorisant la concurrence sur l'échelle régionale et/ou internationale ? 
+- Comment peut-on catégoriser une telle panoplie de modèles d'avions ?  
+- Quel est le profil typique des avions dans le monde ?
+
+D'où nos objectifs data science seront la segmentation des avions de Tunisair et du monde pour distinguer leurs caractéristiques .
+
+Et enfin trouver une solution ou une équation pour aider les administrateurs de la compagnie à l'évoluer, dont leurs buts principaux seront d'assurer les conditions les plus favorables aux visiteurs de notre pays, suivre les progrès scientifiques et technologiques et s'adapter avec l'augmentation exponentielle du trafic aérien
+ 
+
+
+##Compréhension des données:
+
+Nous disposons 3  fichiers .csv :
+
+-Le fichier EconomyClassShort.csv qui a été fourni regroupe 434 avions du monde entier appartenant à des differentes compagnies aeriennes, et enumère 8 de leurs caractéristiques.
+
+-Le fichier FirstClassShort.csv qui a été fourni regroupe 355 avions du monde entier appartenant à des differentes compagnies aeriennes, et enumère 9 de leurs caractéristiques.
+
+-Le fichier ModelsDataSet.csv qui  regroupe 54 modéles d'avions du monde entier,s et enumere 37 de leurs caracteristiques.
+
+-Le fichier Fleet-Data.csv qui  regroupe 11 variables, et enumere 1579 observations
+
+
+
+
+##Modélisation:
+
+Exploration du fichier EconomyClassShort.csv contenant tous les modeles d'avion :
+```{r}
+##Importation du fichier
+all <- read.csv("C:/Users/Nidhal/Downloads/EconomyClassShort.csv")
+#(all[c(3,4,5,6,7,8)])
+allData<-na.omit(all[c(3,4,6,7)])
+
+```
+
+Puisque les variables n'ont pas tous la meme unite, on a choisi de faire un centrage et reduction:
+```{r}
+allScaled<-scale(allData)
+
+```
+
+Pour determiner le nombre optimale de clusters, on a utilisé la methode elbow:
+
+```{r}
+##elbow method
+k.max <- 15 # Maximal number of clusters
+data <- allScaled
+wss <- sapply(1:k.max,
+              function(k){kmeans(data, k, nstart=10 )$tot.withinss})
+
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE,
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+abline(v = 3, lty =2)
+
+```
+
+
+Segmentation avec la methode Kmeans en 3 clusters:
+
+```{r}
+kmeanstestall<-kmeans(allScaled,3)
+library("ggfortify")
+autoplot(kmeanstestall, data = allScaled,
+         label = TRUE, label.size = 3, frame = TRUE)
+```
+
+
+Calculer les moyennes pour chaque cluster:
+
+```{r}
+finalRAll<-aggregate(allData,by=list(kmeanstestall$cluster),mean)
+(finalRAll)
+```
+
+- Cluster [1] : Un groupe d'avions qui est caractérisé par l'absence de la disponibilité du courant électrique, mais leurs chaises sont plus ou moins conforts
+
+- Cluster [2] : Un groupe d'avions qui est caractérisé par l'absence de la disponibilité du courant électrique, aussi, ils ont les moins confortables chaises
+
+- Cluster [3] : C'est le meilleur groupe au niveau du confort et au niveau de la disponibilié du courant électrique.
+
+
+```{r}
+clust <- names(sort(table(kmeanstestall$cluster)))
+
+summary(all[kmeanstestall$clust==clust[1],1:2])
+summary(all[kmeanstestall$clust==clust[2],1:2])
+summary(all[kmeanstestall$clust==clust[3],1:2])
+```
+
+###Tunisair à l'echelle international/regional
+
+```{r}
+clust <- names(sort(table(kmeanstestall$cluster)))
+x<-all[all[,"Airline"]=="Tunis Air",]
+summary(x[kmeanstestall$clust==clust[1],1:2])
+summary(x[kmeanstestall$clust==clust[2],1:2])
+summary(x[kmeanstestall$clust==clust[3],1:2])
+
+
+
+```
+
+```{r}
+clust <- names(sort(table(kmeanstestall$cluster)))
+#Royal Air
+x1<-all[all[,"Airline"]=="Royal Air Maroc",]
+summary(x1[kmeanstestall$clust==clust[1],1:2])
+summary(x1[kmeanstestall$clust==clust[2],1:2])
+summary(x1[kmeanstestall$clust==clust[3],1:2])
+```
+
+```{r}
+clust <- names(sort(table(kmeanstestall$cluster)))
+#Ethiopian Airlines
+x2<-all[all[,"Airline"]=="Ethiopian Airlines",]
+summary(x2[kmeanstestall$clust==clust[1],1:2])
+summary(x2[kmeanstestall$clust==clust[2],1:2])
+summary(x2[kmeanstestall$clust==clust[3],1:2])
+
+```
+
+```{r}
+clust <- names(sort(table(kmeanstestall$cluster)))
+#Delta
+x3<-all[all[,"Airline"]=="Delta",]
+summary(x3[kmeanstestall$cluster==1,1:2])
+summary(x3[kmeanstestall$cluster==2,1:2])
+summary(x3[kmeanstestall$cluster==3,1:2])
+```
+
+###First Class Classification
+
+Exploration du fichier FirstClassShort.csv contenant tous les modeles d'avion :
+
+```{r}
+##Importation du fichier
+all <- read.csv("C:/Users/Nidhal/Downloads/FirstClassShort.csv")
+#(all[c(3,4,5,6,7,8)])
+allData<-na.omit(all[c(3,4,6,7)])
+View(allData)
+```
+
+
+Puisque les variables n'ont pas tous la même unité, on a choisi de faire un centrage et réduction:
+```{r}
+allScaled<-scale(allData)
+```
+
+
+Pour determiner le nombre optimale de clusters, on a utilise la methode elbow:
+
+```{r}
+##elbow method
+k.max <- 15 # Maximal number of clusters
+data <- allScaled
+wss <- sapply(1:k.max,
+              function(k){kmeans(data, k, nstart=10 )$tot.withinss})
+
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE,
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+abline(v = 4, lty =2)
+```
+
+
+Segmentation avec la methode Kmeans en 3 clusters:
+
+```{r}
+kmeanstestall<-kmeans(allScaled,4)
+library("ggfortify")
+autoplot(kmeanstestall, data = allScaled,
+         label = TRUE, label.size = 3, frame = TRUE)
+
+```
+
+
+
+Calculer les moyennes pour chaque cluster:
+
+```{r}
+
+finalRAll2<-aggregate(allData,by=list(kmeanstestall$cluster),mean)
+(finalRAll2)
+
+```
+
+Pour les avions ayant un First class, on a touvé 4 clusters:
+
+- Cluster [1] : C'est le meilleur groupe au niveau du confort et au niveau de la disponibilié du courant électrique.
+
+
+- Cluster [2] : Un groupe d'avions qui est caractérisé par une présence très faible du courant électrique, par contre, il contient des avions à chaises confortables
+
+- Cluster [3] :  Un groupe d'avions qui est caractérisé par l'absence totale de la disponibilité du courant électrique, aussi, les moins confortables chaises
+
+- Cluster [4] :  Un groupe d'avions qui est caractérisé par l'absence totale de la disponibilité du courant électrique, et des chaises plus ou moins confortables
+
+
+
+
+
+
+```{r}
+clust <- names(sort(table(kmeanstestall$cluster)))
+
+summary(all[kmeanstestall$clust==clust[1],1:2])
+summary(all[kmeanstestall$clust==clust[2],1:2])
+summary(all[kmeanstestall$clust==clust[3],1:2])
+```
+
+```{r}
+clust <- names(sort(table(kmeanstestall$cluster)))
+x<-all[all[,"Airline"]=="Tunis Air",]
+summary(x[kmeanstestall$clust==clust[1],1:2])
+summary(x[kmeanstestall$clust==clust[2],1:2])
+summary(x[kmeanstestall$clust==clust[3],1:2])
+summary(x[kmeanstestall$clust==clust[4],1:2])
+```
+
+```{r}
+clust <- names(sort(table(kmeanstestall$cluster)))
+x<-all[all[,"Airline"]=="Delta",]
+summary(x[kmeanstestall$clust==clust[1],1:2])
+summary(x[kmeanstestall$clust==clust[2],1:2])
+summary(x[kmeanstestall$clust==clust[3],1:2])
+```
+
+```{r}
+
+```
+
+```{r}
+clust <- names(sort(table(kmeanstestall$cluster)))
+x<-all[all[,"Airline"]=="Ethiopian Airlines",]
+summary(x[kmeanstestall$clust==clust[1],1:2])
+summary(x[kmeanstestall$clust==clust[2],1:2])
+summary(x[kmeanstestall$clust==clust[3],1:2])
+summary(x[kmeanstestall$clust==clust[4],1:2])
+```
+
+
+
+##Evaluation:
+
+On constate que Tunisair est classifiée parmi les plus mauvaises compagnies aériennes au niveau de la classe économique, pas trop loin des ses compétiteurs régionaux, en comparaison avec les normes internationales
+
+#Panoplie des modéles d'avions et modéle typique 
+
+##Modélisation
+
+
+Récupération des données a partir du fichier  ModelsDataSet.csv contenant tous les modéles des avions :
+
+```{r setup2}
+data <- read.csv(file="C:/Users/Nidhal/Downloads/ModelsDataSet.csv",header=T,sep=";",dec=",")
+
+data3 <- data.frame(data$Type..Model,data$Aspect.Ratio.Wing,data$Speed..kt.,data$Price,data$Max..seats..single.class.)
+data4 <- na.omit(data3)
+View(data4)
+
+```
+
+
+Sélection des variables à utiliser (consommation,vitesse,prix,capacité) et élimination des deux variables qualitatives (type et nom du modéle):
+```{r s}
+
+data5 <- data4
+data5$data.Type..Model<-NULL
+View(data5)
+data5$data.Price <- as.numeric(gsub(",", ".", data5$data.Price))
+data5$data.Aspect.Ratio.Wing <- as.numeric(gsub(",", ".", data5$data.Aspect.Ratio.Wing))
+
+
+```
+
+Utilisation de la méthode "elbow" pour déterminer le meuilleur nombre de groupe :
+```{r g}
+
+k.max <-19
+wss <- sapply(1:k.max,function(k){kmeans(data5, k, nstart=10 )$tot.withinss})
+plot(1:k.max, wss,type="b", pch = 19, frame = FALSE,xlab="Number of clusters K",ylab="Total within-clusters sum of squares")
+
+ 
+```
+
+```{r d}
+
+segs<- scale(data5,center= TRUE,scale=TRUE)
+segs <- kmeans(data5,4)
+clust <- names(sort(table(segs$cluster)))
+summary(data4)
+
+
+```
+
+
+```{r t1}
+data4[segs$cluster==clust[1],]
+```
+Categorie 1 :
+Les modéles de cette catégorie sont caractérisés par une capacité trés faible, un prix bas , et une vitesse faible et une consommation elevé.
+On peut conclure que cette catégorie est destiné au vols occasionelle.
+
+```{r t2}
+data4[segs$cluster==clust[2],]
+```
+Catégorie 2 :
+Ces modéles sont caractérisés par une une capacité faible,une vitesse moyenne, un prix qui n'est pas cher et une consommation  moyenne.
+On peut conclure que ces derniers présentes les modéles les plus utilisés par les compagnies pour les vols quotidien , géneralament pour les vols entre les pays voisins,c'est-a-dire pour une distance courte ou moyenne.
+```{r t3}
+data4[segs$cluster==clust[3],]
+```
+Catégorie 3 :
+Ces modéles sont caractérisés par une capacité trés elevée,
+une vitesse élevée , une consommation moyenne et un prix trés élevée .
+Ces modéles sont utilisés pour les vols de longue distance.
+
+```{r t4}
+data4[segs$cluster==clust[4],]
+```
+
+Catégorie 4 :
+Ces modéles sont carectérisés par une consommation moyenne,une vitesse moyenne,un prix moyen, une capacité élevée.
+Donc on peut dire que les modéles de cette catégorie sont utilisés pour les longues distances et les vols directes .
+
+
+
+```{r m ,include=FALSE}
+library("ggfortify")
+```
+
+```{r pp}
+
+autoplot(segs,data=data5,label = TRUE, label.size = 3, frame = TRUE)
+```
+
+## Evaluation
+
+Conclusion (question 3) :
+Pour notre compagnie aérienne , elle posséde 28 avions qui se trouvent dans la catégorie 2 , et 2 avions ( A330) qui appartiennet à la 4éme catégorie.
+
+Cette panoplie des avions satisfait seuelement les besoins des distances courte et moyenne distance.
+Alors que , en comparant cette panoplie avec celle des autres compagnies ,ayant la majorité des avions apartenant à la 4éme catégorie, donc ils couvrent des longues distances.
+On peut conclure que c'est une panoplie trés modeste.
+
+
+Conclusion (question 4) :
+A partir de cette segmentation , on peut conclure que les meuilleurs modéles,pour une utilisation quotidienne pour les courte et moyenne distance, appartiennet à la 4éme catégorie.
+Plus précisement, le modéle A340 qui posséde la meuilleur consommation ,la meuilleure vitesse,le prix le plus bas  et la capacité la plus grande dans ce groupe.
+Donc, on peut conclure que c'est le profil typique.
+
+
+
+# Etude de l'age et le nombre d'avions de Tunisair
+
+Exploration du fichier Fleet-Data.csv :
+```{r setup}
+
+plane<- read.csv("C:/Users/Nidhal/Downloads/Fleet-Data.csv")
+plane$ï..Parent.Airline<-NULL
+planenum<-plane
+planenum$Airline<-NULL
+planenum$Aircraft.Type<-NULL
+planenum$Unit.Cost<-NULL
+planenum$Total.Cost..Current.<-NULL
+planenum$Future<-NULL
+planenum$Orders<-NULL
+planenum<-na.omit(planenum)
+planescale<-scale(planenum)
+```
+
+ 
+Segmentation avec la méthode CAH:
+
+```{r cah}
+distance<-dist(planescale)
+datacah<-hclust(distance,method = "ward.D")
+plot(datacah)
+```
+
+D'apres le plot, la division de la dataset en 3 segments est la meilleure 
+
+```{r cutree, echo=FALSE}
+datacah<-cutree(datacah,3)
+```
+
+resultats de la segmentation
+
+```{r results}
+result<-plane
+result$Unit.Cost<-NULL
+result$Total.Cost..Current.<-NULL
+result$Future<-NULL
+result$Orders<-NULL
+result<-na.omit(result)
+result<-cbind(result,datacah)
+```
+
+## interpretaion
+
+```{r tunisie}
+subset(result, Airline %in% c("Tunisair","Tunisair Express"))
+
+```
+
+On constate que toutes les avions de tunisair sont dans le cluster [1]
+
+```{r maroc}
+subset(result, Airline %in% c("Royal Air Maroc","Royal Air Maroc Express"))
+
+```
+```{r egyptair}
+subset(result, Airline %in% c("EgyptAir"))
+
+
+```
+
+```{r agg}
+aggregate(result[,3:7], by=list(datacah),FUN=mean)
+```
+
+- Cluster [1] : contient les avions qui ont le plus petits nombre d'avions avec l'age moyen le plus eleve
+
+- Cluster [2] : caracterise par le plus nombre d'avion par type et un age moyen de 9ans
+
+- Cluster [3] : contient les modeles d'avions les plus recentes
+
+
+Toutes les avions de Tunisair appartiennent au cluster [1] , du coup, cette compagnie ne contient que des anciens modéles d'avion.
+Par contre, les autres compagnies contient des avions plus ou moins recentes.
+
+
+#Deploiment:
+
+Puisque Tunisair ne répond pas aux exigences internationles , comment peut-elle faire afin de résoudre ce probléme ?
+Aprés une etude sur l'age des différents modéles d'avion utilisé par Tunisair, on a remarqué que l'age moyen des avions est trop élevé , ce qui va augmenter les maintenances d'une façon plus fréquentes , et peut causer leur disfonctionnement.
+
+Et en faisant une recherche sur les destinations de Tunisair, on a trouvé les résultats suivants:
+- 13 pays de l'Europe
+- 8 pays d'Afrique
+- 7 Pays du Moyen Orient
+- 1 Pays de l'Amerique du nord.
+
+Alors , on peut remarquer qu'il n'existe pas des vols directes vers des destinations asiatiques.
+Alors que ces derniers représentent un bon marché à attaquer , grace au population dense mesurant a peu prés 2 Milliards.
+De meme pour les pays d'afriques, qui sont en train de réaliser une croissance economique énorme, ce qui peut améliorer les chiffres de Tunisair plus rapidement.
+
+Mais, quels sont les besoins pour que Tunisair puisse effectuer cette solution ?
+Puisque l'economie Tunisienne est en crise , on doit chercher le modéle le moins cher qui peut servir à réaliser la solution proposé.
+
+Aprés une étude sur les caractéristiques des modéles disponibles et en prenant en considération que le chiffre d'affaire de Tunisair qui est trés faible par rapport aux autres compagnies internationales. De meme,les fonds d'investissements à long terme qui sont presque négligeable , on a trouvé qu'on doit le modéle A340 !
+
+
+
+
+
